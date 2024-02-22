@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Teleme AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://unpkg.com/htmx.org@1.9.4" integrity="sha384-zUfuhFKKZCbHTY6aRR46gxiqszMk5tcHjsVFxnUo8VMus4kHGVdIYVbOYYNlKmHV" crossorigin="anonymous"></script>
+</head>
+<body class="flex flex-col items-center justify-between min-h-screen bg-zinc-700">
+    <header class="w-full shadow-xl bg-emerald-500/75  py-4 border-b-2  text-center">
+        <h1 class="text-4xl text-white">Teleme AI</h1>
+    </header>
+
+    <div class="flex flex-col items-center justify-center w-full">
+        <div id="chatbox" class="mt-8 mb-8">
+            {% for message in messages %}
+            <div class='text-white p-4 m-2 shadow-md rounded bg-gray-600 text-sm'>User: {{ message.user_message }}</div>
+            <div class='text-white p-4 m-2 shadow-md rounded bg-gray-600 text-sm'>Teleme AI: {{ message.bot_message }}</div>
+            {% endfor %}
+        </div>
+
+        <form hx-post="{% url 'chat_view' %}" class="flex max-h-16 justify-center items-center w-full mb-8">
+            {% csrf_token %}
+            <div class="my-indicator"></div>
+            <textarea rows="2" id="user_input" name="user_input" required
+                class="rounded w-8/12 md:w-1/4 bg-teal-700/50 text-white ml-4 p-2 h-16 shadow-xl resize-none text-xs"
+                id="prompt" placeholder="Send a message" autofocus autocomplete="off"></textarea>
+            <div class="flex flex-col gap-2">
+                <button id="submitButton" type="submit"
+                    class="w-16 h-16 p-2 rounded bg-zinc-800 hover:bg-zinc-900 text-white text-center m-4 shadow-xl"><i
+                        class="fa fa-paper-plane" aria-hidden="true"></i>
+                </button>
+            </div>
+        </form>
+        <h4 class="text-white text-sm">Disclaimer : Teleme AI may provide false information.</h4>
+    </div>
+</body>
+</html>
+
