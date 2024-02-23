@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Teleme AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <script src="https://unpkg.com/htmx.org@1.9.4"
+            integrity="sha384-zUfuhFKKZCbHTY6aRR46gxiqszMk5tcHjsVFxnUo8VMus4kHGVdIYVbOYYNlKmHV"
+            crossorigin="anonymous"></script>
+</head>
+<body class="antialiased bg-zinc-700 text-white">
+<div class="min-h-screen flex flex-col">
+    <header class="sticky top-0 bg-black p-4 border-b-2 border-emerald-400 text-center z-10">
+        <h1 class="text-3xl">Teleme AI</h1>
+    </header>
+
+    <main class="flex-1 overflow-y-auto">
+        <ul 
+            id="chat_responses"
+            hx-sse="connect:{% url 'stream' session_id=session_id %} swap:message"
+            hx-swap="beforeend"
+            class="min-h-[50vh] flex flex-col items-center">
+            <!-- Chat messages will be loaded here -->
+        </ul>
+    </main>
+
+    <footer class="bg-black p-4 border-t-2 border-emerald-400 text-center z-10">
+        <form id="chat-form" class="flex justify-center items-center mb-4" hx-post="{% url 'chat_view' session_id=session_id %}"
+            hx-target="#chat_responses" hx-swap="beforeend" 
+            hx-trigger="click from:#submitButton" 
+            hx-on="htmx:beforeRequest: htmx.find('#chat_responses').innerHTML += `<li class='text-white px-4 py-2 m-1 w-1/2 text-md flex justify-start items-center'><strong>You</strong> : ${htmx.find('#user_input').value}</li>`;
+            
+            htmx.find('#user_input').value=''; 
+            htmx.find('#user_input').placeholder='Ask Teleme AI'; 
+            
+            window.scrollTo(0, htmx.find('#chat_responses').scrollHeight+100); 
+            htmx.find('#user_input').focus();
+
+            htmx:afterRequest: window.scrollTo(0, htmx.find('#chat_responses').scrollHeight+100);"
+            >
+            {% csrf_token %}
+            <div class="my-indicator" hx-indicator>
+                <!-- Spinner component -->
+                <div class="flex justify-center items-center h-full">
+                    <div id="spinner" class="animate-spin hidden rounded-full h-6 w-6 border-b-2 border-zinc-200 mx-2"></div>
+                </div>
+            </div>
+            <textarea rows="2" id="user_input" name="user_input" required
+                      class="rounded border border-emerald-400 bg-zinc-900 text-white p-2 h-10 w-1/2 shadow-xl resize-none text-md mr-2"
+                      placeholder="Ask Teleme AI" autofocus autocomplete="off"></textarea>
+           <button id="submitButton" type="button"
+                    class="w-10 h-10 p-2 rounded border border-emerald-300 bg-zinc-800 hover:bg-zinc-900 text-white text-center shadow-xl">
+                <i class="fa fa-paper-plane" aria-hidden="true"></i>
+            </button>
+        </form>
+        <h4 class="text-xs">Teleme AI can make mistakes. Consider checking important information.</h4>
+    </footer>
+</div>
+<script>
+    htmx.find('#user_input').addEventListener('keydown', function(event) {
+        // Check if Enter key is pressed without holding the Shift key
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();  // Prevent newline insertion
+            htmx.trigger("#submitButton", "click");
+        }
+    });
+</script>
+</body>
+</html>
