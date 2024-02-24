@@ -1,6 +1,7 @@
 import os
+from random import randint
 from uuid import uuid4
-from django.http import JsonResponse, StreamingHttpResponse
+from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import render
 import requests
 from .models import Message
@@ -15,15 +16,17 @@ MESSAGE_QUEUE = queue.Queue()
 # Create your views here.
 def index(request):
     session_id = uuid4().hex
+    print('session_id', session_id)
     return render(request, "index.html", {'session_id': session_id})
 
 def chat_view(request, session_id):
     if request.method == "POST":
         user_message = request.POST.get('user_input')
         print('user_message', user_message)
+        message = Message(session_id=session_id, user_message=user_message)
+        message.save()
         MESSAGE_QUEUE.put(user_message)
-        Message.objects.create(session_id=session_id, user_message=user_message)
-        return JsonResponse(data={'success':'200'})
+        return HttpResponse()
 
 def get_existing_messages(session_id) -> list:
     """
@@ -34,40 +37,38 @@ def get_existing_messages(session_id) -> list:
     for message in Message.objects.filter(session_id=session_id).values('user_message', 'llm_message'):
         formatted_messages.append({"role": "user", "content": message['user_message']})
         formatted_messages.append({"role": "assistant", "content": message['llm_message']})
-
     return formatted_messages
 
 def stream(request, session_id):
     def message_stream():
         global new_conversation
-
+        print('session_id', session_id)
         while True:
             # If a message is present in the queue, send it to the clients
             if not MESSAGE_QUEUE.empty():
+                message = Message.objects.filter(session_id=session_id).latest('created_at')
                 user_message = MESSAGE_QUEUE.get()
 
-                hx_swap = False
+                current_response_id = f"gptblock{randint(67, 999999)}"
 
-                message = ""
-            
+                hx_swap = False
+                
+                word_html = ""
+
                 for word in chat_response(user_message, session_id):
                     try:
-                        message += word.replace("\n", "<br>")
-
-                        ai_message = f"<p><strong>Teleme AI</strong> : { message }</p>"
-
-                        res = f"""data: <li class="text-white px-4 py-2 m-1 w-1/2 text-md flex justify-start items-center" id="" {"hx-swap-oob='true'" if hx_swap else ""}>{ai_message}</li>\n\n"""
-
-                        hx_swap = True
-
+                        word_html += word.replace("\n", "<br>")
+                        ai_message = f"<p><strong>Teleme AI</strong> : {word_html}</p>"
+                        res = f"data: <li class='text-white px-4 py-2 m-1 w-1/2 text-md flex justify-start items-center' id='{message.id}' {'hx-swap-oob=\'true\'' if hx_swap else ''}>{ai_message}</li>\n\n"
                         print(f"user: {user_message}")
                         print(res)
-
-                        yield res
-        
+                        yield res + "\n\n"  # Add newline characters at the end of each line
+                        hx_swap = True
                     except Exception as e:
                         print(e)
-                        return e         
+                        break
+                message.llm_message = word_html
+                message.save()
     return StreamingHttpResponse(message_stream(), content_type='text/event-stream')
 
 def get_latest_message_by_session_id(session_id) -> Message:

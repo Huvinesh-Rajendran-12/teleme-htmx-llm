@@ -9,9 +9,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
           integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
           crossorigin="anonymous" referrerpolicy="no-referrer"/>
-    <script src="https://unpkg.com/htmx.org@1.9.4"
-            integrity="sha384-zUfuhFKKZCbHTY6aRR46gxiqszMk5tcHjsVFxnUo8VMus4kHGVdIYVbOYYNlKmHV"
-            crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.8"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/sse.js"></script>
 </head>
 <body class="antialiased bg-zinc-700 text-white">
 <div class="min-h-screen flex flex-col">
@@ -19,17 +18,19 @@
         <h1 class="text-3xl">Teleme AI</h1>
     </header>
 
-    <main class="flex-1 overflow-y-auto">
+    <main class="flex-1 overflow-auto">
         <ul 
             id="chat_responses"
-            hx-sse="connect:{% url 'stream' session_id=session_id %} swap:message"
+            hx-ext="sse"
+            sse-connect="/stream/{{session_id}}"
+            sse-swap="message"
             hx-swap="beforeend"
             class="min-h-[50vh] flex flex-col items-center">
             <!-- Chat messages will be loaded here -->
         </ul>
     </main>
 
-    <footer class="bg-black p-4 border-t-2 border-emerald-400 text-center z-10">
+    <footer class="sticky bottom-0 bg-black p-4 border-t-2 border-emerald-400 text-center z-10">
         <form id="chat-form" class="flex justify-center items-center mb-4" hx-post="{% url 'chat_view' session_id=session_id %}"
             hx-target="#chat_responses" hx-swap="beforeend" 
             hx-trigger="click from:#submitButton" 
@@ -38,17 +39,15 @@
             htmx.find('#user_input').value=''; 
             htmx.find('#user_input').placeholder='Ask Teleme AI'; 
             
-            window.scrollTo(0, htmx.find('#chat_responses').scrollHeight+100); 
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); 
             htmx.find('#user_input').focus();
 
-            htmx:afterRequest: window.scrollTo(0, htmx.find('#chat_responses').scrollHeight+100);"
+            htmx:afterRequest: window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });"
             >
             {% csrf_token %}
             <div class="my-indicator" hx-indicator>
                 <!-- Spinner component -->
-                <div class="flex justify-center items-center h-full">
-                    <div id="spinner" class="animate-spin hidden rounded-full h-6 w-6 border-b-2 border-zinc-200 mx-2"></div>
-                </div>
+                <div id="spinner" class="animate-spin hidden rounded-full h-6 w-6 border-b-2 border-zinc-200 mx-2"></div>
             </div>
             <textarea rows="2" id="user_input" name="user_input" required
                       class="rounded border border-emerald-400 bg-zinc-900 text-white p-2 h-10 w-1/2 shadow-xl resize-none text-md mr-2"
@@ -69,6 +68,17 @@
             htmx.trigger("#submitButton", "click");
         }
     });
+    // Function to scroll to the bottom of the chat responses
+    function scrollToBottom() {
+        var chatResponses = document.getElementById("chat_responses");
+        chatResponses.scrollTop = chatResponses.scrollHeight;
+    }
+
+    // Add event listener to the chat responses element to scroll to bottom when it is updated
+    document.getElementById("chat_responses").addEventListener("htmx:afterSwap", function() {
+        scrollToBottom();
+    });
 </script>
 </body>
 </html>
+
