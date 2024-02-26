@@ -23,8 +23,7 @@ def chat_view(request, session_id):
     if request.method == "POST":
         user_message = request.POST.get('user_input')
         print('user_message', user_message)
-        message = Message(session_id=session_id, user_message=user_message)
-        message.save()
+        Message.objects.create(session_id=session_id, user_message=user_message)
         MESSAGE_QUEUE.put(user_message)
         return HttpResponse()
 
@@ -48,34 +47,34 @@ def stream(request, session_id):
             if not MESSAGE_QUEUE.empty():
                 message = Message.objects.filter(session_id=session_id).latest('created_at')
                 user_message = MESSAGE_QUEUE.get()
-
+                message = Message.objects.filter(session_id=session_id).latest('created_at')
+                hx_swap = False
                 current_response_id = f"gptblock{randint(67, 999999)}"
 
-                hx_swap = False
-                
-                word_html = ""
-
+                response = ""
+            
                 for word in chat_response(user_message, session_id):
                     try:
-                        word_html += word.replace("\n", "<br>")
-                        ai_message = f"<p><strong>Teleme AI</strong> : {word_html}</p>"
-                        res = f"data: <li class='text-white px-4 py-2 m-1 w-1/2 text-md flex justify-start items-center' id='{message.id}' {'hx-swap-oob=\'true\'' if hx_swap else ''}>{ai_message}</li>\n\n"
+                        response += word.replace("\n", "<br>")
+
+                        ai_message = f"<p>{ response }</p>"
+
+                        # Use flexbox to align "Teleme AI" wording on top of the AI message
+                        res = f"""data: <li class="text-white px-4 py-2 m-1 w-1/2 text-md flex flex-col justify-start items-start" id="{current_response_id}" {"hx-swap-oob='true'" if hx_swap else ""}><div><strong>Teleme AI</strong><br>{ai_message}<div></li>\n\n"""
+
+                        hx_swap = True
+
                         print(f"user: {user_message}")
                         print(res)
                         yield res + "\n\n"  # Add newline characters at the end of each line
                         hx_swap = True
                     except Exception as e:
                         print(e)
-                        break
-                message.llm_message = word_html
+                        return e         
+                message.current_response_id = current_response_id
+                message.llm_message = response
                 message.save()
     return StreamingHttpResponse(message_stream(), content_type='text/event-stream')
-
-def get_latest_message_by_session_id(session_id) -> Message:
-        latest_model : Message = Message.objects.filter(session_id=session_id).order_by('-id').first()
-        print(latest_model)
-        return latest_model
-
 
 def chat_response(user_input:str, session_id:str):
     #max_new_tokens = 256

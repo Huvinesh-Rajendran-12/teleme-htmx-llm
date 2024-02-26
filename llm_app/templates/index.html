@@ -34,7 +34,7 @@
         <form id="chat-form" class="flex justify-center items-center mb-4" hx-post="{% url 'chat_view' session_id=session_id %}"
             hx-target="#chat_responses" hx-swap="beforeend" 
             hx-trigger="click from:#submitButton" 
-            hx-on="htmx:beforeRequest: htmx.find('#chat_responses').innerHTML += `<li class='text-white px-4 py-2 m-1 w-1/2 text-md flex justify-start items-center'><strong>You</strong> : ${htmx.find('#user_input').value}</li>`;
+            hx-on="htmx:beforeRequest: htmx.find('#chat_responses').innerHTML += `<li class='text-white px-4 py-2 m-1 w-1/2 text-md flex flex-col justify-start items-start'><div><strong>You</strong><br>${htmx.find('#user_input').value}</div></li>`;
             
             htmx.find('#user_input').value=''; 
             htmx.find('#user_input').placeholder='Ask Teleme AI'; 
