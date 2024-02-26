@@ -4,6 +4,7 @@ from django.db.models.fields import TextField
 
 class Message(models.Model):
     session_id = TextField(default='')
+    current_response_id = TextField(default='')
     user_message = models.TextField()
     llm_message = TextField(default='')
     created_at  = models.DateTimeField(auto_now_add=True)
