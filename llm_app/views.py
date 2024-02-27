@@ -4,6 +4,7 @@ from uuid import uuid4
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import render
+from django.utils.safestring import mark_safe
 import requests
 from .models import Message
 import queue
@@ -63,8 +64,6 @@ def stream(request, session_id):
                         # Use flexbox to align "Teleme AI" wording on top of the AI message
                         res = f"""data: <li class="text-white px-4 py-2 m-1 w-1/2 text-md flex flex-col justify-start items-start" id="{current_response_id}" {"hx-swap-oob='true'" if hx_swap else ""}><div><strong>Teleme AI</strong><br>{ai_message}<div></li>\n\n"""
 
-                        hx_swap = True
-
                         print(f"user: {user_message}")
                         print(res)
                         yield res + "\n\n"  # Add newline characters at the end of each line
@@ -72,6 +71,9 @@ def stream(request, session_id):
                     except Exception as e:
                         print(e)
                         return e         
+                downvote_button = f'<button class="downvote-btn" data-message-id="{current_response_id}" onclick="openFeedback({current_response_id})"><i class="fa-regular fa-thumbs-down"></i></button>'
+                footer = f'<div class="message-footer text-left">{downvote_button}</div>'
+                yield mark_safe(f'data: {footer}\n\n')
                 message.current_response_id = current_response_id
                 message.llm_message = response
                 message.save()
