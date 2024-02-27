@@ -1,5 +1,5 @@
 from django.db import models
-from django.db.models.fields import TextField
+from django.db.models.fields import TextField, BooleanField
 # Create your models here.
 
 class Message(models.Model):
@@ -10,7 +10,7 @@ class Message(models.Model):
     created_at  = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     feedback = models.TextField(default="")
-    ratings = models.IntegerField(default=0)
+    is_flagged = BooleanField(default=False)
 
 class Admin(models.Model):
     username = TextField()

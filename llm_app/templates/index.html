@@ -60,6 +60,7 @@
         <h4 class="text-xs">Teleme AI can make mistakes. Consider checking important information.</h4>
     </footer>
 </div>
+{% include 'feedback_popup.html' %}
 <script>
     htmx.find('#user_input').addEventListener('keydown', function(event) {
         // Check if Enter key is pressed without holding the Shift key
@@ -78,6 +79,15 @@
     document.getElementById("chat_responses").addEventListener("htmx:afterSwap", function() {
         scrollToBottom();
     });
+    function openFeedback(response) {
+        document.getElementById("popup").style.display = "block";
+        document.getElementById('popup').querySelector('input[name="message_id"]').value = response.id;
+    }
+
+    // JavaScript to hide the pop-up when the close button is clicked
+    function closeFeedback() {
+        document.getElementById("popup").style.display = "none";
+    }
 </script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 import os
 from random import randint
 from uuid import uuid4
+from django.core.exceptions import ValidationError
 from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import render
 import requests
@@ -112,3 +113,18 @@ def chat_response(user_input:str, session_id:str):
         print("Error: ", e)
         return response
 
+
+def submit_feedback(request, session_id):
+    if request.method == 'POST':
+        feedback = request.POST.get('user_feedback')
+        response_id = request.POST.get('response_id')
+        message = Message.objects.filter(session_id=session_id, current_response_id=response_id).first()
+        try:
+            message.is_flagged = True
+            message.feedback = feedback
+            message.save()
+            html = "<div>Feedback is submitted succesfully.</div>"
+            return HttpResponse(html)
+        except ValidationError as e:
+            html = "<div>Something went wrong. Try agian.</div>"
+            return HttpResponse(html)
